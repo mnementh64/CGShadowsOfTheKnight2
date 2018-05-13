@@ -1,4 +1,3 @@
-import org.junit.Assert;
 import org.junit.Test;
 
 public class PlayerTest {
@@ -11,7 +10,7 @@ public class PlayerTest {
         Referee referee = new Referee(4, 10, batmanInitialPosition.x, batmanInitialPosition.y, problem);
         Batman batman = new Batman();
         // initial position
-        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y, DetectorAnswer.UNKNOWN.toString());
+//        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
         ProblemSolver solver = new ProblemSolver(problem, batman);
         executeTest(referee, batman, solver);
@@ -25,7 +24,7 @@ public class PlayerTest {
         Referee referee = new Referee(2, 1, batmanInitialPosition.x, batmanInitialPosition.y, problem);
         Batman batman = new Batman();
         // initial position
-        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y, DetectorAnswer.UNKNOWN.toString());
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
         ProblemSolver solver = new ProblemSolver(problem, batman);
         executeTest(referee, batman, solver);
@@ -36,10 +35,27 @@ public class PlayerTest {
         int maxTurns = 11;
         Point batmanInitialPosition = new Point(0, 98);
         Problem problem = new Problem(1, 99, maxTurns);
-        Referee referee = new Referee(0, 97, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+//        Referee referee = new Referee(0, 97, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+//        Referee referee = new Referee(0, 55, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+//        Referee referee = new Referee(0, 47, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Referee referee = new Referee(0, 0, batmanInitialPosition.x, batmanInitialPosition.y, problem);
         Batman batman = new Batman();
         // initial position
-        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y, DetectorAnswer.UNKNOWN.toString());
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test3_2() throws Exception {
+        int maxTurns = 11;
+        Point batmanInitialPosition = new Point(0, 1);
+        Problem problem = new Problem(1, 99, maxTurns);
+        Referee referee = new Referee(0, 99, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
         ProblemSolver solver = new ProblemSolver(problem, batman);
         executeTest(referee, batman, solver);
@@ -53,29 +69,102 @@ public class PlayerTest {
         Referee referee = new Referee(0, 1, batmanInitialPosition.x, batmanInitialPosition.y, problem);
         Batman batman = new Batman();
         // initial position
-        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y, DetectorAnswer.UNKNOWN.toString());
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test5() throws Exception {
+        int maxTurns = 12;
+        Point batmanInitialPosition = new Point(2, 6);
+        Problem problem = new Problem(15, 15, maxTurns);
+        Referee referee = new Referee(0, 0, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test6() throws Exception {
+        int maxTurns = 16;
+        Point batmanInitialPosition = new Point(17, 29);
+        Problem problem = new Problem(50, 50, maxTurns);
+        Referee referee = new Referee(48, 1, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test7() throws Exception {
+        int maxTurns = 16;
+        Point batmanInitialPosition = new Point(17, 29);
+        Problem problem = new Problem(50, 50, maxTurns);
+        Referee referee = new Referee(47, 2, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test7_2() throws Exception {
+        int maxTurns = 16;
+        Point batmanInitialPosition = new Point(17, 29);
+        Problem problem = new Problem(50, 50, maxTurns);
+        Referee referee = new Referee(15, 49, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
+
+        ProblemSolver solver = new ProblemSolver(problem, batman);
+        executeTest(referee, batman, solver);
+    }
+
+    @Test
+    public void test8() throws Exception {
+        int maxTurns = 27;
+        Point batmanInitialPosition = new Point(501, 501);
+        Problem problem = new Problem(1000, 1000, maxTurns);
+        Referee referee = new Referee(98, 98, batmanInitialPosition.x, batmanInitialPosition.y, problem);
+        Batman batman = new Batman();
+        // initial position
+        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
         ProblemSolver solver = new ProblemSolver(problem, batman);
         executeTest(referee, batman, solver);
     }
 
     private void executeTest(Referee referee, Batman batman, ProblemSolver solver) throws Exception {
-        System.out.println("Position " + batman.lastPosition().toString() + " get an answer : UNKNOWN");
+        int x = referee.lastSubmittedPosition.x;
+        int y = referee.lastSubmittedPosition.y;
 
-        // throw an exception in case of turnsout
+        // game loop
+        String bombDir = DetectorAnswer.UNKNOWN.toString();
         while (!referee.hasWon()) {
+            // register this test with the result
+            batman.addCheck(x, y);
+            solver.notifyDetectionAnswer(DetectorAnswer.valueOf(bombDir)); // tell the solver what is the detection for the last submitted position
+
             // ask the solver to compute the next position
             Point nextPosition = solver.computeNextPosition();
 
-            // submit to the referee and get its answer
-            DetectorAnswer answer = referee.submitPosition(nextPosition);
-            System.out.println("Position " + nextPosition.toString() + " get an answer : " + answer);
-
-            // register this test with the result
-            batman.addCheck(nextPosition.x, nextPosition.y, answer.toString());
+            // output the position
+//            System.out.println(nextPosition.toString());
+            bombDir = referee.submitPosition(nextPosition).toString();
+            x = nextPosition.x;
+            y = nextPosition.y;
         }
-
-        Assert.assertEquals(1, 1);
     }
 }
 
@@ -83,7 +172,7 @@ class Referee {
     private final Problem problem;
     Point bombPosition;
     Point lastSubmittedPosition;
-    int turn = 1;
+    int turn = 0;
 
     public Referee(int bombPositionX, int bombPositionY, int batmanInitialX, int batmanInitialY, Problem problem) {
         this.problem = problem;
@@ -106,7 +195,6 @@ class Referee {
 
         // the distance between the new submitted position and the bomb
         int newDistance = bombPosition.distance2(nextPosition);
-        System.out.println("           last distance : " + lastDistance + " / new distance : " + newDistance);
 
         // register the next position as previous for next turn
         lastSubmittedPosition = nextPosition;
@@ -123,7 +211,8 @@ class Referee {
 
     private void checkMaxTurns() throws Exception {
         turn++;
-        if (turn > problem.maxTurns) {
+        System.err.println("turn " + turn);
+        if (turn >= problem.maxTurns) {
             throw new Exception("Too many turns !!");
         }
     }
