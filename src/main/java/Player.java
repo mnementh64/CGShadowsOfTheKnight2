@@ -1,4 +1,7 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Auto-generated code below aims at helping you parse
@@ -14,7 +17,8 @@ class Player {
 
         Problem problem = new Problem(W, H, N);
         Batman batman = new Batman();
-        ProblemSolver solver = new ProblemSolver(problem, batman);
+//        ProblemSolver solver = new ProblemSolver(problem, batman);
+        ProblemSolverFinal solver = new ProblemSolverFinal(batman, problem);
 
         int X0 = in.nextInt();
         int Y0 = in.nextInt();
@@ -60,14 +64,21 @@ class Building {
         this.height = height;
     }
 
-    public Point computeSymmetricalPosition(Point point) {
-        int semiWidth = width / 2;
-        int xs = point.x < semiWidth ? semiWidth + (semiWidth - point.x) : semiWidth - (point.x - semiWidth);
-        int semiHeight = height / 2;
-        int ys = point.y < semiHeight ? semiHeight + (semiHeight - point.y) : semiHeight - (point.y - semiHeight);
-        Point symmetrical = new Point(xs, ys);
-        System.err.println("point " + point.toString() + " get symmetrical " + symmetrical.toString());
-        return symmetrical;
+    public boolean contains(Point pt) {
+        return pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height;
+    }
+
+    public Point computeSymetricalOf(Point pt) {
+        return new Point(width - pt.x, height - pt.y);
+    }
+
+    public List<StraightLine> getBoundingStraightLines() {
+        List<StraightLine> bounds = new ArrayList<>();
+        bounds.add(new StraightLine(0, 1, 0, StraightLine.REGION.POSITIVE));
+        bounds.add(new StraightLine(0, 1, 1 - height, StraightLine.REGION.NEGATIVE));
+        bounds.add(new StraightLine(1, 0, 0, StraightLine.REGION.POSITIVE));
+        bounds.add(new StraightLine(1, 0, 1 - width, StraightLine.REGION.NEGATIVE));
+        return bounds;
     }
 }
 
@@ -195,6 +206,41 @@ class ProblemSolver {
 
         // adjust the search range
         currentFinder.adjustRange(positionBefore, lastPosition, answer);
+    }
+}
+
+class ProblemSolverFinal {
+    private final Batman batman;
+    private final Problem problem;
+    private PositionFinderMultilateration currentFinder;
+
+    public ProblemSolverFinal(Batman batman, Problem problem) {
+        this.batman = batman;
+        this.problem = problem;
+        this.currentFinder = new PositionFinderMultilateration(problem.building);
+    }
+
+    public Point computeNextPosition() {
+        try {
+            Point nextPosition = currentFinder.computeNextPosition(batman.lastPosition);
+            System.err.println("       compute next point " + nextPosition);
+            return nextPosition;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void notifyDetectionAnswer(DetectorAnswer answer) {
+        if (answer.equals(DetectorAnswer.UNKNOWN)) {
+            return;
+        }
+
+        // get the 2 last positions of Batman
+        Point lastPosition = batman.lastPosition();
+        Point positionBefore = batman.positionBefore();
+
+        // adjust the search range
+        currentFinder.notifyDetectionAnswer(positionBefore, lastPosition, answer);
     }
 }
 
@@ -387,11 +433,17 @@ class PositionFinderY extends PositionFinder {
             range.max = middle;
         } else {
             if (positionBefore.y < lastPosition.y) {
-                if (deltaY > 1) {
+                if (deltaY > 2) {
                     if (answer.equals(DetectorAnswer.COLDER)) {
                         range.max = middle;
                     } else {
                         range.min = middle;
+                    }
+                } else if (deltaY == 2) {
+                    if (answer.equals(DetectorAnswer.COLDER)) {
+                        range.max = lastPosition.y;
+                    } else {
+                        range.min = lastPosition.y;
                     }
                 } else {
                     if (answer.equals(DetectorAnswer.COLDER)) {
@@ -401,11 +453,17 @@ class PositionFinderY extends PositionFinder {
                     }
                 }
             } else {
-                if (deltaY > 1) {
+                if (deltaY > 2) {
                     if (answer.equals(DetectorAnswer.COLDER)) {
                         range.min = middle;
                     } else {
                         range.max = middle;
+                    }
+                } else if (deltaY == 2) {
+                    if (answer.equals(DetectorAnswer.COLDER)) {
+                        range.min = lastPosition.y;
+                    } else {
+                        range.max = lastPosition.y;
                     }
                 } else {
                     if (answer.equals(DetectorAnswer.COLDER)) {
@@ -464,5 +522,167 @@ class PositionFinderY extends PositionFinder {
     @Override
     public boolean samePosition(Point p1, Point p2) {
         return p1.y == p2.y;
+    }
+}
+
+class PositionFinderMultilateration {
+    private final Building building;
+    private List<StraightLine> allLines = new ArrayList<>();
+
+    PositionFinderMultilateration(Building building) {
+        this.building = building;
+        this.allLines.addAll(building.getBoundingStraightLines());
+    }
+
+    Point computeNextPosition(Point point) throws Exception {
+        if (allLines.size() == 4) {
+            return building.computeSymetricalOf(point);
+        }
+        // compute intersection points of all lines
+        List<Point> intersections = computeIntersections(allLines, building);
+
+        // compute iso barycenter of these points
+        return computeIsoBarycenter(intersections);
+    }
+
+    void notifyDetectionAnswer(Point positionBefore, Point lastPosition, DetectorAnswer answer) {
+        StraightLine newLine = StraightLine.asBissectionOf(positionBefore, lastPosition, answer);
+        allLines.add(newLine);
+    }
+
+    private List<Point> computeIntersections(List<StraightLine> allLines, Building building) {
+        List<Point> intersections = new ArrayList<>();
+
+        allLines.forEach(refLine -> allLines.stream().filter(line -> !line.equals(refLine)).forEach(line -> {
+            Point intersection = line.intersect(refLine);
+            if (intersection != null) {
+                System.err.println("Intersect " + refLine + " and " + line + " --> " + intersection.toString());
+                if (building.contains(intersection) && validFor(intersection, allLines)) {
+                    System.err.println("  keep this point");
+                    intersections.add(intersection);
+                }
+            }
+        }));
+
+        intersections.forEach(pt -> System.err.println("Intersection " + pt));
+        return intersections;
+    }
+
+    private boolean validFor(Point intersection, List<StraightLine> allLines) {
+        return allLines.stream().allMatch(line -> line.validFor(intersection));
+    }
+
+    private Point computeIsoBarycenter(List<Point> intersections) throws Exception {
+        double x = intersections.stream().mapToDouble(pt -> pt.x).reduce((x1, x2) -> x1 + x2).orElseThrow(Exception::new);
+        double y = intersections.stream().mapToDouble(pt -> pt.y).reduce((y1, y2) -> y1 + y2).orElseThrow(Exception::new);
+        return new Point((int) (x / intersections.size()), (int) (y / intersections.size()));
+    }
+}
+
+class StraightLine {
+
+
+    public enum REGION {POSITIVE, SAME, NEGATIVE;}
+
+    private static AtomicInteger commonUniqueId = new AtomicInteger();
+    private int uniqueId = commonUniqueId.getAndIncrement();
+
+    private double a, b, c;
+    private REGION region;
+
+    StraightLine() {
+    }
+
+    StraightLine(double a, double b, double c, REGION region) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.region = region;
+    }
+
+    static StraightLine asBissectionOf(Point p1, Point p2, DetectorAnswer answer) {
+        StraightLine line = new StraightLine();
+
+        // Compute coef as y = mx + p
+        double m = (p1.x - p2.x) / (p2.y - p1.y);
+        double p = (p1.y + p2.y) / 2 - (p1.x - p2.x) * (p1.x + p2.x) / (2 * (p2.y - p1.y));
+
+        // final form : ax + by + c = 0 <-> mx -y + p = 0
+        line.a = m;
+        line.b = -1;
+        line.c = p;
+
+        // define the region
+        if (answer.equals(DetectorAnswer.SAME)) {
+            line.region = REGION.SAME;
+        } else {
+            if (answer.equals(DetectorAnswer.WARMER)) {
+                // p2 is warmer - keep its region
+                if (line.value(p2) > 0) {
+                    line.region = REGION.POSITIVE;
+                } else {
+                    line.region = REGION.NEGATIVE;
+                }
+            } else {
+                // p2 is colder - keep p1 region
+                if (line.value(p1) > 0) {
+                    line.region = REGION.POSITIVE;
+                } else {
+                    line.region = REGION.NEGATIVE;
+                }
+            }
+        }
+
+        return line;
+    }
+
+    boolean validFor(Point pt) {
+        double value = a * pt.x + b * pt.y + c;
+        return (region.equals(REGION.POSITIVE) && value >= 0) || (region.equals(REGION.NEGATIVE) && value <= 0) || (region.equals(REGION.SAME) && value == 0);
+
+    }
+
+    private double value(Point p) {
+        return a * p.x + b * p.y + c;
+    }
+
+    Point intersect(StraightLine line) {
+        // are the lines parallels ?
+        if ((line.b == 0 && this.b == 0) || line.getDirectorCoef() == this.getDirectorCoef()) {
+            return null;
+        }
+
+        // vertical & horizontal lines
+        if (this.a == 0 && line.b == 0) {
+            return new Point(line, this.b);
+        }
+
+        double y = (this.a * line.c - line.a * this.c) / (line.a * this.b - this.a * line.b);
+        double x = (this.c - this.b * y) / this.a;
+        return new Point((int) x, (int) y);
+    }
+
+    private double getDirectorCoef() {
+        return -a / b;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        StraightLine line = (StraightLine) o;
+
+        return uniqueId == line.uniqueId;
+    }
+
+    @Override
+    public int hashCode() {
+        return uniqueId;
+    }
+
+    @Override
+    public String toString() {
+        return a + ".x + " + b + ".y + " + c + " = 0";
     }
 }

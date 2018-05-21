@@ -1,6 +1,18 @@
+import org.junit.Assert;
 import org.junit.Test;
 
 public class PlayerTest {
+
+    @Test
+    public void StraightLine_intersect_case1() {
+        StraightLine l1 = new StraightLine(0, 1, 0, StraightLine.REGION.POSITIVE);
+        StraightLine l2 = new StraightLine(1, 0, -17, StraightLine.REGION.NEGATIVE);
+
+        Point pt = l1.intersect(l2);
+
+        Assert.assertEquals(17, pt.x);
+        Assert.assertEquals(0, pt.y);
+    }
 
     @Test
     public void test1() throws Exception {
@@ -12,7 +24,8 @@ public class PlayerTest {
         // initial position
 //        batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
-        ProblemSolver solver = new ProblemSolver(problem, batman);
+//        ProblemSolver solver = new ProblemSolver(problem, batman);
+        ProblemSolverFinal solver = new ProblemSolverFinal(batman, problem);
         executeTest(referee, batman, solver);
     }
 
@@ -26,7 +39,8 @@ public class PlayerTest {
         // initial position
         batman.addCheck(batmanInitialPosition.x, batmanInitialPosition.y);
 
-        ProblemSolver solver = new ProblemSolver(problem, batman);
+//        ProblemSolver solver = new ProblemSolver(problem, batman);
+        ProblemSolverFinal solver = new ProblemSolverFinal(batman, problem);
         executeTest(referee, batman, solver);
     }
 
@@ -166,6 +180,28 @@ public class PlayerTest {
             y = nextPosition.y;
         }
     }
+
+    private void executeTest(Referee referee, Batman batman, ProblemSolverFinal solver) throws Exception {
+        int x = referee.lastSubmittedPosition.x;
+        int y = referee.lastSubmittedPosition.y;
+
+        // game loop
+        String bombDir = DetectorAnswer.UNKNOWN.toString();
+        while (!referee.hasWon()) {
+            // register this test with the result
+            batman.addCheck(x, y);
+            solver.notifyDetectionAnswer(DetectorAnswer.valueOf(bombDir)); // tell the solver what is the detection for the last submitted position
+
+            // ask the solver to compute the next position
+            Point nextPosition = solver.computeNextPosition();
+
+            // output the position
+//            System.out.println(nextPosition.toString());
+            bombDir = referee.submitPosition(nextPosition).toString();
+            x = nextPosition.x;
+            y = nextPosition.y;
+        }
+    }
 }
 
 class Referee {
@@ -216,4 +252,5 @@ class Referee {
             throw new Exception("Too many turns !!");
         }
     }
+
 }
